@@ -30,8 +30,7 @@ class ThresholdDetector():
         self.frames                 = frames # number of frames per buffer
         self.recording_sample       = recording_sample # number of seconds to sample from
         self.stream                 = None # the PyAudio stream
-        self.alerted_threshold      = False 
-        self.was_at_threshold       = False
+        self.alerted_threshold      = False
         self.threshold_timestamp    = None  # time value set when a detector determines the volume is below the set threshold.
         self.operator               = op
         try:
@@ -161,18 +160,14 @@ class ThresholdDetector():
             if is_below_threshold and above_time_threshold and not self.alerted_threshold:
                 self.stdout('Time and volume thresholds met!')
                 self.alerted_threshold = True
-            elif is_below_threshold and not self.was_at_threshold:
+            elif is_below_threshold and self.threshold_timestamp is None:
                 self.stdout('New threshold period, counting down time threshold')
-                self.was_at_threshold = True
                 self.threshold_timestamp = time.time()
-            elif not is_below_threshold and self.was_at_threshold and self.alerted_threshold:
-                self.stdout('Seconds thresholds were met: {}'.format(time.time() - self.threshold_timestamp))
-                self.alerted_threshold = False
-                self.was_at_threshold = False
-                self.threshold_timestamp = None
             elif not is_below_threshold:
-                self.was_at_threshold = False
+                if above_time_threshold:
+                    self.stdout('Seconds thresholds were met: {}'.format(time.time() - self.threshold_timestamp))
                 self.threshold_timestamp = None
+                self.alerted_threshold = False
 
     def run(self, ):
         """ runs user set threshold detector
