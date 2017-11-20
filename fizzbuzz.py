@@ -1,11 +1,6 @@
 def fizzbuzz(number):
-	""" fizzbuzz(number) --> iterates a range from 1 to number (inclusive), printing:
-		'FizzBuzz' if number is divisible by 3 and 5
-		'Fizz' if number is divisible by 3
-		'Buzz' if number is divisible by 5
-		the number otherwise
-
-		Prints an error if given anything but a positive
+	""" fizzbuzz(number) --> iterates a range from 1 to number printing fizzubzz
+		Prints an error if given anything but a positive integer
 	"""
 	if not isinstance(number, int) or number < 1:
 		print "Only takes positive integers"
