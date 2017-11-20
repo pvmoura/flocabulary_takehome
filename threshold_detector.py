@@ -39,6 +39,7 @@ class ThresholdDetector():
         except ValueError:
             raise Exception("Detectors must be: simple or timed")
         self.set_device_info()
+        self.create_stream()
         if volume_threshold is None:
             self.set_volume_threshold()
 
@@ -95,14 +96,6 @@ class ThresholdDetector():
                                   frames_per_buffer=self.frames,
                                   input_device_index=int(self.device['index']))
 
-    def test_and_restart_stream(self, ):
-        """ restart the stream if it isn't on
-        """
-        try:
-            self.stream.is_active()
-        except:
-            self.create_stream()
-
     def get_volume(self, ):
         """ reads sample data and calculates volume
             the stream's sample rate is the number of bytes per second
@@ -112,12 +105,11 @@ class ThresholdDetector():
             raw data, yielding a list of values which are then averaged
             to get one volume value for the entire sample
         """ 
-        self.test_and_restart_stream()
         volumes = []
         iterations = int(self.device['defaultSampleRate'] / self.chunk * self.recording_sample)
         
         for _ in xrange(0, iterations):
-            data = self.stream.read(self.chunk)
+            data = self.stream.read(self.chunk, exception_on_overflow=False)
             volumes.append(audioop.rms(data, 2)) # calculates the root mean square of the signal's sine wave
         return sum(volumes) / len(volumes)
 
@@ -186,7 +178,6 @@ class ThresholdDetector():
         """ runs user set threshold detector
         """
         time.sleep(1)
-        self.create_stream()
         self.detector()
 
 if __name__ == "__main__":
