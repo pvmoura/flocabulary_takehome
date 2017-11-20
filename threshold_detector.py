@@ -177,7 +177,6 @@ class ThresholdDetector():
     def run(self, ):
         """ runs user set threshold detector
         """
-        time.sleep(1)
         self.detector()
 
 if __name__ == "__main__":
