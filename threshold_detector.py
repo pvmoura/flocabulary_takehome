@@ -136,11 +136,16 @@ class ThresholdDetector():
         sys.stdout.write(str(output) + '\n')
         sys.stdout.flush()
 
-    def simple_detector(self, ):
+    def loop_condition(self, end_time):
+        """ For testing purposes to have an end time
+        """
+        return time.time() < end_time if end_time is not None else True
+
+    def simple_detector(self, end_time=None):
         """ Reads volumes from input audio stream and prints 0 if 
             volume is below the threshold, otherwise prints 1
         """
-        while True:
+        while self.loop_condition(end_time):
             average = self.get_volume()
             is_below_threshold = self.detect_volume_threshold(average)
             if is_below_threshold:
@@ -148,11 +153,12 @@ class ThresholdDetector():
             else:
                 self.stdout(1)
     
-    def timed_volume_detector(self, ):
+    def timed_volume_detector(self, end_time=None):
         """ Reads volumes from input audio stream and
             alerts if time and volume thresholds are exceeded
         """
-        while True:
+
+        while self.loop_condition(end_time):
             average = self.get_volume()
             is_below_threshold = self.detect_volume_threshold(average)
             above_time_threshold = self.detect_time_threshold()
