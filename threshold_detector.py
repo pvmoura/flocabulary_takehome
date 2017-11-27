@@ -30,8 +30,7 @@ class ThresholdDetector():
         self.frames                 = frames # number of frames per buffer
         self.recording_sample       = recording_sample # number of seconds to sample from
         self.stream                 = None # the PyAudio stream
-        self.alerted_threshold      = False 
-        self.was_at_threshold       = False
+        self.alerted_threshold      = False
         self.threshold_timestamp    = None  # time value set when a detector determines the volume is below the set threshold.
         self.operator               = op
         try:
@@ -39,6 +38,7 @@ class ThresholdDetector():
         except ValueError:
             raise Exception("Detectors must be: simple or timed")
         self.set_device_info()
+        self.create_stream()
         if volume_threshold is None:
             self.set_volume_threshold()
 
@@ -95,14 +95,6 @@ class ThresholdDetector():
                                   frames_per_buffer=self.frames,
                                   input_device_index=int(self.device['index']))
 
-    def test_and_restart_stream(self, ):
-        """ restart the stream if it isn't on
-        """
-        try:
-            self.stream.is_active()
-        except:
-            self.create_stream()
-
     def get_volume(self, ):
         """ reads sample data and calculates volume
             the stream's sample rate is the number of bytes per second
@@ -112,12 +104,11 @@ class ThresholdDetector():
             raw data, yielding a list of values which are then averaged
             to get one volume value for the entire sample
         """ 
-        self.test_and_restart_stream()
         volumes = []
         iterations = int(self.device['defaultSampleRate'] / self.chunk * self.recording_sample)
         
         for _ in xrange(0, iterations):
-            data = self.stream.read(self.chunk)
+            data = self.stream.read(self.chunk, exception_on_overflow=False)
             volumes.append(audioop.rms(data, 2)) # calculates the root mean square of the signal's sine wave
         return sum(volumes) / len(volumes)
 
@@ -145,11 +136,16 @@ class ThresholdDetector():
         sys.stdout.write(str(output) + '\n')
         sys.stdout.flush()
 
-    def simple_detector(self, ):
+    def loop_condition(self, end_time):
+        """ For testing purposes to have an end time
+        """
+        return time.time() < end_time if end_time is not None else True
+
+    def simple_detector(self, end_time=None):
         """ Reads volumes from input audio stream and prints 0 if 
             volume is below the threshold, otherwise prints 1
         """
-        while True:
+        while self.loop_condition(end_time):
             average = self.get_volume()
             is_below_threshold = self.detect_volume_threshold(average)
             if is_below_threshold:
@@ -157,36 +153,32 @@ class ThresholdDetector():
             else:
                 self.stdout(1)
     
-    def timed_volume_detector(self, ):
+    def timed_volume_detector(self, end_time=None):
         """ Reads volumes from input audio stream and
             alerts if time and volume thresholds are exceeded
         """
-        while True:
+
+        while self.loop_condition(end_time):
             average = self.get_volume()
             is_below_threshold = self.detect_volume_threshold(average)
             above_time_threshold = self.detect_time_threshold()
             self.stdout(average)
-            if is_below_threshold and above_time_threshold and not self.alerted_threshold:
-                self.stdout('Time and volume thresholds met!')
-                self.alerted_threshold = True
-            elif is_below_threshold and not self.was_at_threshold:
-                self.stdout('New threshold period, counting down time threshold')
-                self.was_at_threshold = True
-                self.threshold_timestamp = time.time()
-            elif not is_below_threshold and self.was_at_threshold and self.alerted_threshold:
-                self.stdout('Seconds thresholds were met: {}'.format(time.time() - self.threshold_timestamp))
+            if is_below_threshold:
+                if self.threshold_timestamp is None:
+                    self.stdout('New threshold period, counting down time threshold')
+                    self.threshold_timestamp = time.time()
+                elif above_time_threshold and not self.alerted_threshold:
+                    self.stdout('Time and volume thresholds met!')
+                    self.alerted_threshold = True
+            else:
+                if above_time_threshold:
+                    self.stdout('Seconds thresholds were met: {}'.format(time.time() - self.threshold_timestamp))
+                self.threshold_timestamp = None
                 self.alerted_threshold = False
-                self.was_at_threshold = False
-                self.threshold_timestamp = None
-            elif not is_below_threshold:
-                self.was_at_threshold = False
-                self.threshold_timestamp = None
 
     def run(self, ):
         """ runs user set threshold detector
         """
-        time.sleep(1)
-        self.create_stream()
         self.detector()
 
 if __name__ == "__main__":

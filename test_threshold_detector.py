@@ -11,7 +11,7 @@ class SetVolumeTestCase(SimpleTestCase):
 	def runTest(self, ):
 		self.sd.set_volume_threshold()
 		threshold = self.sd.volume_threshold
-		self.assertTrue(isinstance(threshold, float))
+		self.assertTrue(isinstance(threshold, int))
 		self.assertTrue(threshold != 10000)
 
 class GetVolumeTestCase(SimpleTestCase):
@@ -39,14 +39,14 @@ class DetectTimeThresholdTestCase(SimpleTestCase):
 
 class VolumeThresholdTestCase(SimpleTestCase):
 	def runTest(self, ):
-		self.sd.volume_threshold_detection(end_time=time.time() + 10)
+		self.sd.simple_detector(end_time=time.time() + 10)
 
 class TimedVolumeThresholdTestCase(SimpleTestCase):
 	def runTest(self, ):
 		start = time.time()
 		self.sd.volume_threshold = 100
 		self.sd.time_threshold = 0.5
-		self.sd.timed_volume_threshold_detection(end_time=time.time() + 10)
+		self.sd.timed_volume_detector(end_time=time.time() + 10)
 
 if __name__ == "__main__":
 	unittest.main()
