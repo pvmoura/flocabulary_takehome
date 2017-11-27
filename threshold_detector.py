@@ -163,13 +163,14 @@ class ThresholdDetector():
             is_below_threshold = self.detect_volume_threshold(average)
             above_time_threshold = self.detect_time_threshold()
             self.stdout(average)
-            if is_below_threshold and above_time_threshold and not self.alerted_threshold:
-                self.stdout('Time and volume thresholds met!')
-                self.alerted_threshold = True
-            elif is_below_threshold and self.threshold_timestamp is None:
-                self.stdout('New threshold period, counting down time threshold')
-                self.threshold_timestamp = time.time()
-            elif not is_below_threshold:
+            if is_below_threshold:
+                if self.threshold_timestamp is None:
+                    self.stdout('New threshold period, counting down time threshold')
+                    self.threshold_timestamp = time.time()
+                elif above_time_threshold and not self.alerted_threshold:
+                    self.stdout('Time and volume thresholds met!')
+                    self.alerted_threshold = True
+            else:
                 if above_time_threshold:
                     self.stdout('Seconds thresholds were met: {}'.format(time.time() - self.threshold_timestamp))
                 self.threshold_timestamp = None
